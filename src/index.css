@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-app-bg: var(--app-bg);
+  --color-app-surface: var(--app-surface);
+  --color-app-text: var(--app-text);
+  --color-app-muted: var(--app-muted);
+  --color-app-border: var(--app-border);
+  
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-muted: var(--brand-muted);
+}
+
+:root {
+  /* Gentle, eye-friendly light mode (soft warm cream / slate) */
+  --app-bg: #f8f8f5;
+  --app-surface: #ffffff;
+  --app-text: #1c1c1e;
+  --app-muted: #767680;
+  --app-border: #e5e5ea;
+  
+  --brand: #f97316;
+  --brand-hover: #ea580c;
+  --brand-muted: rgba(249, 115, 22, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Rich premium dark mode (deep charcoal / zinc) */
+    --app-bg: #09090b;
+    --app-surface: #18181b;
+    --app-text: #f4f4f5;
+    --app-muted: #a1a1aa;
+    --app-border: #27272a;
+    
+    --brand: #f97316;
+    --brand-hover: #ea580c;
+    --brand-muted: rgba(249, 115, 22, 0.15);
+  }
+}
