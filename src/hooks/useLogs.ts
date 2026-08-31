@@ -48,7 +48,7 @@ export function useLogs(selectedDate: Date) {
 
     const commit = async (plate: LogEntryWithFood[]) => {
         const timestamp = selectedDate.getTime();
-        // only persist DB fields, instanceId is ephemeral and intentionally dropped here
+        // only persist DB fields, instanceId is temporary, dropped here
         const entries: Omit<LogEntry, 'id'>[] = plate.map(({ entry }) => ({
             foodId: entry.foodId,
             timestamp,

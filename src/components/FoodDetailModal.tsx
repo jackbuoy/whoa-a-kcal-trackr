@@ -178,8 +178,10 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
                         }}
                         className="block mx-auto mt-4 text-xs text-red-500 hover:text-red-600 font-bold hover:underline cursor-pointer"
                     >
-                        Remove from Plate
+                        Remove
                     </button>
+                    // would like to move the remove button up to the top right
+                    // trash can icon would be ideal
                 )}
             </div>
             <div
