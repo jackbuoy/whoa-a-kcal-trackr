@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect } from "react";
+import { useState, useRef, useLayoutEffect, type FocusEvent, type MouseEvent } from "react";
 import { AnimatePresence } from "motion/react";
 import type { Food, LogEntryWithFood } from "../types/food";
 import { useFoodSearch } from "../hooks/useFoodSearch";
@@ -14,6 +14,7 @@ interface Props {
 export const SearchScreen = ({ onHeaderHeightReady, onAdd, onSelectFood, onEnteredSearchInput }: Props) => {
 
     const headerRef = useRef<HTMLDivElement>(null);
+    const justFocusedRef = useRef(false);
 
     const [query, setQuery] = useState('');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -41,6 +42,22 @@ export const SearchScreen = ({ onHeaderHeightReady, onAdd, onSelectFood, onEnter
         onSelectFood(buildLogEntry(scannedFood));
     };
 
+    const handleSearchFocus = (e: FocusEvent<HTMLInputElement>) => {
+        onEnteredSearchInput();
+
+        const input = e.currentTarget;
+        if (input.value.length === 0) return;
+
+        input.select();
+        justFocusedRef.current = true;
+    };
+
+    const handleSearchMouseUp = (e: MouseEvent<HTMLInputElement>) => {
+        if (!justFocusedRef.current) return;
+        e.preventDefault();
+        justFocusedRef.current = false;
+    };
+
     return (
         <div className="h-full flex flex-col overflow-x-hidden">
             <div ref={headerRef} className="p-4 flex gap-2.5 bg-app-bg border-b border-app-border items-center">
@@ -48,7 +65,9 @@ export const SearchScreen = ({ onHeaderHeightReady, onAdd, onSelectFood, onEnter
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search for a food..."
                     className="flex-1 p-3.5 bg-app-surface rounded-2xl border border-app-border text-app-text placeholder-app-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm transition-all text-base min-w-0"
-                    onFocus={onEnteredSearchInput}
+                    onFocus={handleSearchFocus}
+                    onMouseUp={handleSearchMouseUp}
+                    onBlur={() => { justFocusedRef.current = false; }}
                 />
                 <button
                     onClick={() => {
