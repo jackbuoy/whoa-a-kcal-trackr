@@ -17,7 +17,7 @@ export const DayTotals = ({ foodEntries }: Props) => {
     const totals = macroMultipleTotals(foodEntries);
 
     return (
-        <div className="mb-6 p-5 bg-app-surface rounded-2xl border border-app-border shadow-sm flex flex-row items-center justify-between gap-4">
+        <div className="p-5 bg-app-surface rounded-2xl border border-app-border shadow-sm flex flex-row items-center justify-between gap-4">
             {/* Calories — big headline number */}
             <div className="flex flex-col">
                 <span className="text-[10px] text-app-muted font-bold uppercase tracking-wider mb-0.5">Total Energy</span>

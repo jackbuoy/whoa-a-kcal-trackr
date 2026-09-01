@@ -85,18 +85,26 @@ function App() {
   }
 
   return (
-    <div className="p-6 md:p-8 bg-app-bg min-h-screen text-app-text font-sans antialiased">
+    <div className="h-dvh overflow-hidden p-6 md:p-8 bg-app-bg text-app-text font-sans antialiased flex flex-col">
 
       {/* dashboard view */}
-      <h1 className="text-3xl font-extrabold text-brand tracking-tight mb-6">whoa, a kcal trackr!</h1>
+      <h1 className="text-3xl font-extrabold text-brand tracking-tight mb-4 shrink-0">whoa, a kcal trackr!</h1>
       {view === 'dashboard' && (
-        <>
+        <div className="flex-1 min-h-0 flex flex-col gap-3">
           <DateNavigator date={selectedDate} onPrev={() => navigate(-1)} onNext={() => navigate(1)} />
           <DayTotals foodEntries={filteredLogs} />
-          <FoodLog logs={filteredLogs} onSelectFood={setActiveFood} />
+          <FoodLog
+            key={selectedDate.toDateString()}
+            logs={filteredLogs}
+            selectedDate={selectedDate}
+            onSelectFood={setActiveFood}
+            onAddToHour={(date) => {
+              setSelectedDate(date);
+              setView('search');
+            }}
+          />
           <AddFoodButton onClick={() => setView('search')} />
-        </>
-
+        </div>
       )}
 
       {/* logging workspace (plate, search, food detail) */}
