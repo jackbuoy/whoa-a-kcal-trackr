@@ -85,12 +85,12 @@ function App() {
   }
 
   return (
-    <div className="h-dvh overflow-hidden p-6 md:p-8 bg-app-bg text-app-text font-sans antialiased flex flex-col">
+    <div className="h-dvh overflow-hidden p-3 sm:p-6 md:p-8 bg-app-bg text-app-text font-sans antialiased flex flex-col">
 
       {/* dashboard view */}
-      <h1 className="text-3xl font-extrabold text-brand tracking-tight mb-4 shrink-0">whoa, a kcal trackr!</h1>
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-brand tracking-tight mb-2.5 sm:mb-4 shrink-0">whoa, a kcal trackr!</h1>
       {view === 'dashboard' && (
-        <div className="flex-1 min-h-0 flex flex-col gap-3">
+        <div className="flex-1 min-h-0 flex flex-col gap-2.5 sm:gap-3">
           <DateNavigator date={selectedDate} onPrev={() => navigate(-1)} onNext={() => navigate(1)} />
           <DayTotals foodEntries={filteredLogs} />
           <FoodLog
