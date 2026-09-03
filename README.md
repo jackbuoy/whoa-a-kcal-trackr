@@ -1,168 +1,102 @@
-# whoa-a-kcal-trackr
+# whoa, a kcal trackr!
 
-A simple, offline-first calorie and macronutrient tracker designed for rapid logging.It features local database persistence via Dexie/IndexedDB, USDA FoodData Central integration, and a mobile-optimized, gesture-driven user interface.
-
----
-
-## Key Features
-
-*   **Offline-First Architecture**: Powered by [Dexie.js](https://dexie.org/) and **IndexedDB** for local data persistence. Logs and food definitions are stored on-device, offering instant loading and offline usability.
-*   **USDA FoodData Central Integration**: Search millions of global food items dynamically via a debounced API client. Search results automatically map USDA nutritional profiles to the application's local format.
-*   **Staged Logging ("The Plate")**: A dedicated workspace to compile, review, and customize food portions, serving multipliers, and cumulative macros before final commitment to the daily log.
-*   **Intelligent Macro Scaling**: Real-time macronutrient calculations (calories, protein, fat, carbohydrates) scaled dynamically based on serving multipliers and quantities.
-*   **Custom Gesture Pickers**: Native-feeling wheel picker inputs for date and time configuration, custom-built using physics-based spring animations from [Motion](https://motion.dev/).
-*   **Modern Dark Mode Aesthetic**: Premium UI built with [Tailwind CSS v4](https://tailwindcss.com/) featuring glassmorphic navigation headers, card-based layouts, and smooth gesture animations.
+a calorie and macro tracker that stays out of your way, works offline, and stores your data right on your device
 
 ---
 
-## Tech Stack & Dependencies
+## why i built this
 
-| Category | Technology / Library | Version | Purpose |
-| :--- | :--- | :--- | :--- |
-| **Core UI** | [React](https://react.dev/) | `^19.2.5` | Component rendering engine |
-| **Build Tool** | [Vite](https://vite.dev/) | `^8.0.9` | Fast compiler and development server |
-| **Language** | [TypeScript](https://www.typescriptlang.org/) | `~6.0.2` | Static typing for entities, hooks, and helpers |
-| **Styling** | [Tailwind CSS](https://tailwindcss.com/) | `^4.2.3` | Modern utility CSS styling (v4) |
-| **Local Database** | [Dexie.js](https://dexie.org/) | `^4.4.2` | IndexedDB abstraction layer |
-| **DB Hooks** | [Dexie React Hooks](https://dexie.org/) | `^4.4.0` | React bindings for live database queries |
-| **Animations** | [Motion](https://motion.dev/) | `^12.38.0` | Gesture handling and screen transition animations |
+most nutrition apps have gotten frustrating to use. they ask you to create accounts, push monthly subscriptions, show ads, and make you wait on network requests just to log an apple or a cup of rice
+
+i wanted something straightforward:
+- **offline by default**: your foods and logs are saved directly in your browser using IndexedDB. no accounts, no tracking, no loading spinners, and it still works if you lose service
+- **staging meals before logging**: instead of saving every ingredient one by one, you can build out a meal on "the plate", adjust your portion sizes, see how the numbers add up, and log the whole thing at once
+- **good food data**: search whole foods and raw ingredients through the USDA database, or scan barcodes on packaged groceries with your phone camera using Open Food Facts
+- **built for phones**: a 24-hour daily timeline, custom scroll wheels for time and date, and an on-screen number pad so your phone's keyboard doesn't push the screen around
 
 ---
 
-## Directory Structure
+## how it works
 
-```text
-whoa-a-kcal-trackr/
-├── src/
-│   ├── assets/                  # SVG, static icons, and design resources
-│   ├── components/              # Interactive user interface elements
-│   │   ├── AddFoodButton.tsx       # Button to open the search and logging workspace
-│   │   ├── DateNavigator.tsx       # Header controls to switch between calendar days
-│   │   ├── DateSelectModal.tsx     # Time/date selector overlay with custom wheel columns
-│   │   ├── DateSelectPill.tsx      # Toggled pill showing the active logging timestamp
-│   │   ├── DayTotals.tsx           # Progress dashboard presenting aggregated macros
-│   │   ├── DetailMacroColumn.tsx   # Visual percentage/gram column bar indicator
-│   │   ├── FoodCard.tsx            # Card component displaying individual food names and macros
-│   │   ├── FoodDetailModal.tsx     # Serving editor showing interactive macro percentages
-│   │   ├── FoodLog.tsx             # Hourly group container for consumed food lists
-│   │   ├── HourTotalsHeader.tsx    # Header for hourly buckets displaying hourly totals
-│   │   ├── LogFoodButton.tsx       # Floating action button to commit current plate staging
-│   │   ├── PlateDetailScreen.tsx   # Detailed list view of food currently on the staging plate
-│   │   ├── PlatePill.tsx           # Pill-badge showing quantities of items on the plate
-│   │   ├── SearchScreen.tsx        # Search interface blending local DB foods and USDA results
-│   │   └── WheelColumn.tsx         # Swipe/drag-to-scroll custom selector columns
-│   ├── constants/               # Global configuration tables
-│   │   ├── date-time.ts            # Hours (1-12) and Periods (AM/PM) maps
-│   │   └── units.ts                # Gram & milliliter multiplier mappings (cups, oz, kg, etc.)
-│   ├── data/                    # Local storage helper assets
-│   │   └── mockDatabase.ts         # Preloaded seed items for instant demonstration
-│   ├── hooks/                   # Business logic and query separation layers
-│   │   ├── useFoodSearch.ts        # Combines local database search and USDA API results
-│   │   ├── useLogs.ts              # IndexedDB date queries, parsing, and commit mutations
-│   │   ├── usePlate.ts             # Workspace state tracker (adding, editing, cleaning plate)
-│   │   └── useSelectedDate.ts      # State manager for dashboard date transitions
-│   ├── types/                   # Unified TypeScript definitions
-│   │   └── food.ts                 # Interfaces for ServingOption, Food, and LogEntry
-│   ├── utils/                   # Reusable functions and formatting calculations
-│   │   ├── dateUtils.ts            # Time range generator, hour grouping, and formatters
-│   │   ├── dbUtil.ts               # Database check and auto-seeding routine
-│   │   ├── foodDataCentralUtils.ts # USDA API search queries and nutrient parsers
-│   │   ├── iconUtils.ts            # Emoji selector based on text matches
-│   │   ├── logMacroUtils.ts        # Nutrient calculators for single/multiple entries
-│   │   └── stringUtils.ts          # Word casing formatting and unit display strings
-│   ├── db.ts                    # Dexie class setup establishing local table structure
-│   ├── App.tsx                  # Root state layer, layout container, and modal routers
-│   ├── main.tsx                 # Core application entrypoint
-│   └── index.css                # Global styling entries importing Tailwind v4
-```
+### barcode scanning & food search
+- **camera barcode scanner**: uses your device's camera to read barcodes directly. it tries the browser's native `BarcodeDetector` first, falling back to `@zxing/library` if needed. includes controls for zoom and flashlight
+- **open food facts**: scans look up packaged foods through the Open Food Facts database
+- **usda fooddata central**: text search pulls whole foods and ingredients from the USDA database, automatically converting nutrients down to per-gram or per-milliliter values
+
+### the plate (meal staging)
+- add multiple foods to a temporary plate before committing anything to your day
+- tweak quantities and serving units (grams, ounces, cups, tablespoons, or custom packaging)
+- view a breakdown of calories and macros (protein, fat, carbs) across the whole plate
+- commit the entire meal at once or update an existing logged meal
+
+### 24-hour timeline
+- daily log laid out hour by hour from 12 AM to 11 PM
+- highlights the current hour so you know where you are in the day
+- add food directly to any hour with a quick "+" button
+- hourly and daily totals update as you log
 
 ---
 
-## Database Schema (IndexedDB)
+## tech stack
 
-The project leverages IndexedDB via **Dexie.js** using a two-table design.
-
-```mermaid
-erDiagram
-    FOODS {
-        string id PK "FDC ID or random UUID"
-        string name "Name of the food"
-        string brand "Brand owner or developer"
-        string icon "Visual emoji representation"
-        string baseUnit "g or ml standard unit"
-        object baseMacros "Calories & macros per 1g/1ml"
-        array servingOptions "Custom serving sizes / multipliers"
-    }
-    LOG_ENTRIES {
-        int id PK "Auto-incrementing database ID"
-        string instanceId "Unique runtime plate identifier"
-        string foodId FK "Reference key pointing to foods.id"
-        int timestamp "Epoch milliseconds of log entry"
-        float quantity "Portion quantity multiplier"
-        object selectedServing "ServingOption details used"
-    }
-
-    FOODS ||--o{ LOG_ENTRIES : "contains"
-```
-
-### Table Definitions
-*   **`foods`**: Caches food definitions (seeded locally and imported from USDA search calls). Primary key is `id`, indexed on `name`.
-*   **`logEntries`**: Stored logs of consumed foods with portion sizes and timestamps. Primary key is an auto-incrementing integer `id`, indexed on `foodId` and `timestamp`.
+- **frontend**: React 19, TypeScript, Vite
+- **styling**: Tailwind CSS v4
+- **database**: Dexie.js (IndexedDB)
+- **animations**: Motion
+- **scanning**: `@zxing/library` & native BarcodeDetector
+- **food data**: USDA FoodData Central & Open Food Facts
 
 ---
 
-## External API Integration
+## technical details & architecture
 
-Food items not cached locally are queried on-demand from the **USDA FoodData Central API**.
+### local-first reactive queries
+data is stored locally using IndexedDB through Dexie.js. components subscribe to database queries using `useLiveQuery`, meaning any time a log is created, updated, or deleted, the timeline and summary totals re-render automatically without needing a global state store or manual re-fetching
 
-*   **API Endpoint**: `https://api.nal.usda.gov/fdc/v1/foods/search`
-*   **Authentication**: Configured via `VITE_USDA_API_KEY` in your environment.
-*   **Conversion Math**:
-    *   USDA stores raw nutrient values **per 100g or 100ml**.
-    *   `foodDataCentralUtils.ts` automatically converts nutritional stats to a **per 1g/ml** unit base by dividing by `100`.
-    *   Macronutrient calculations scale the base values according to servings:
-        $$\text{Calories / Macros} = \text{Base Macro} \times \text{Serving Multiplier} \times \text{Quantity}$$
+### base-unit scaling
+foods imported from the USDA or Open Food Facts are normalized to base metric units (1g or 1ml). serving options store simple multipliers relative to that base. this keeps macro calculations consistent regardless of the unit:
 
----
+$$\text{macro} = \text{base value} \times \text{serving ratio} \times \text{quantity}$$
 
-## Getting Started
+### staged plate state & instance ids
+items on the plate are given a temporary `instanceId` via `crypto.randomUUID()`. this allows having multiple separate entries of the same food on the same plate (e.g., olive oil used for cooking vs. olive oil used as dressing) with different serving sizes, without key conflicts
 
-### Prerequisites
-*   [Node.js](https://nodejs.org/) (v18.x or later recommended)
-*   A registered key for the [USDA FoodData Central API](https://fdc.nal.usda.gov/api-key-signup.html)
-
-### Installation
-
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/your-username/whoa-a-kcal-trackr.git
-    cd whoa-a-kcal-trackr
-    ```
-
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
-
-3.  **Configure environment variables**:
-    Create a `.env` file in the project root:
-    ```env
-    VITE_USDA_API_KEY=YOUR_USDA_API_KEY_HERE
-    ```
-
-4.  **Start the development server**:
-    ```bash
-    npm run dev
-    ```
-
-5.  **Build for production**:
-    ```bash
-    npm run build
-    ```
+### barcode decoder fallback
+the scanner attempts to use the browser's hardware-accelerated `BarcodeDetector` API first for better battery life and higher frame rates on supported mobile browsers. if that API isn't available, it falls back to a software decode loop using `@zxing/library`
 
 ---
 
-## Development Guidelines & Design Patterns
+## getting started
 
-*   **Reactive State Streams**: Always access IndexedDB queries via the `useLiveQuery` hook. React components will automatically re-render when the database is modified from any separate views.
-*   **Plate Instance Identifiers**: Staged food items on the "Plate" are assigned a temporary `instanceId` (using `crypto.randomUUID()`). This allows users to add multiple distinct servings of the exact same food item (same `foodId`) with different weights or measurements simultaneously without conflicts.
+### prerequisites
+- Node.js (v18 or newer)
+- a free [USDA FoodData Central API key](https://fdc.nal.usda.gov/api-key-signup.html) (Open Food Facts doesn't require a key)
+
+### setup
+
+1. clone the repository:
+   ```bash
+   git clone https://github.com/your-username/whoa-a-kcal-trackr.git
+   cd whoa-a-kcal-trackr
+   ```
+
+2. install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. set up environment variables:
+   create a `.env` file in the root:
+   ```env
+   VITE_USDA_API_KEY=your_usda_api_key_here
+   ```
+
+4. run the development server:
+   ```bash
+   npm run dev
+   ```
+
+5. build for production:
+   ```bash
+   npm run build
+   ```
