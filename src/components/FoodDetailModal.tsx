@@ -130,7 +130,7 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
 
             {/* scrollable content, tapping here dismisses the keyboard*/}
             <div
-                className="flex-1 overflow-y-auto px-4 pt-6 pb-4"
+                className="flex-1 overflow-y-auto px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-4"
                 onClick={() => setKeyboardOpen(false)}
             >
                 {/* back button */}

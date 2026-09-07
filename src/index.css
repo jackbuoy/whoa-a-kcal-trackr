@@ -13,6 +13,7 @@
 }
 
 :root {
+  color-scheme: light dark;
   /* Gentle, eye-friendly light mode (soft warm cream / slate) */
   --app-bg: #f8f8f5;
   --app-surface: #ffffff;
@@ -27,6 +28,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
     /* Rich premium dark mode (deep charcoal / zinc) */
     --app-bg: #09090b;
     --app-surface: #18181b;
@@ -38,4 +40,41 @@
     --brand-hover: #ea580c;
     --brand-muted: rgba(249, 115, 22, 0.15);
   }
+}
+
+/* mobile native app feel & viewport bounds */
+html,
+body,
+#root {
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  min-height: 100dvh;
+  height: 100%;
+}
+
+/* safe area spacing utility helpers */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+.pt-safe {
+  padding-top: var(--safe-top);
+}
+
+.pb-safe {
+  padding-bottom: var(--safe-bottom);
+}
+
+.pl-safe {
+  padding-left: var(--safe-left);
+}
+
+.pr-safe {
+  padding-right: var(--safe-right);
 }

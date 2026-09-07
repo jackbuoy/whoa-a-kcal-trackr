@@ -85,7 +85,7 @@ function App() {
   }
 
   return (
-    <div className="h-dvh overflow-hidden p-3 sm:p-6 md:p-8 bg-app-bg text-app-text font-sans antialiased flex flex-col">
+    <div className="h-dvh overflow-hidden pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] px-[max(0.75rem,env(safe-area-inset-left))] sm:p-6 md:p-8 bg-app-bg text-app-text font-sans antialiased flex flex-col">
 
       {/* dashboard view */}
       <h1 className="text-2xl sm:text-3xl font-extrabold text-brand tracking-tight mb-2.5 sm:mb-4 shrink-0">whoa, a kcal trackr!</h1>
@@ -121,7 +121,7 @@ function App() {
           >
             <div className="h-screen w-screen flex flex-col overflow-hidden bg-app-bg text-app-text">
               {/* persistent header */}
-              <nav className="p-4 border-b border-app-border flex justify-between items-center bg-app-surface/90 backdrop-blur-md">
+              <nav className="pt-[max(1rem,env(safe-area-inset-top))] px-4 pb-4 border-b border-app-border flex justify-between items-center bg-app-surface/90 backdrop-blur-md">
                 {/* back button, adjust time, cals, plate pill */}
                 <button
                   onClick={() => {
