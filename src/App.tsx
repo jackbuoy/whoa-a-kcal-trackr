@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import type { LogEntryWithFood } from "./types/food";
 import { DayTotals } from "./components/DayTotals";
 import { FoodLog } from "./components/FoodLog";
@@ -84,6 +85,18 @@ function App() {
     setView('dashboard');
   }
 
+  const handleOpenSearch = (date?: Date) => {
+    flushSync(() => {
+      if (date) setSelectedDate(date);
+      setView('search');
+    });
+    const searchInput = document.getElementById('search-food-input') as HTMLInputElement | null;
+    if (searchInput) {
+      searchInput.focus({ preventScroll: true });
+      window.scrollTo(0, 0);
+    }
+  };
+
   return (
     <div className="h-dvh overflow-hidden pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] px-[max(0.75rem,env(safe-area-inset-left))] sm:p-6 md:p-8 bg-app-bg text-app-text font-sans antialiased flex flex-col">
 
@@ -98,12 +111,9 @@ function App() {
             logs={filteredLogs}
             selectedDate={selectedDate}
             onSelectFood={setActiveFood}
-            onAddToHour={(date) => {
-              setSelectedDate(date);
-              setView('search');
-            }}
+            onAddToHour={handleOpenSearch}
           />
-          <AddFoodButton onClick={() => setView('search')} />
+          <AddFoodButton onClick={() => handleOpenSearch()} />
         </div>
       )}
 
