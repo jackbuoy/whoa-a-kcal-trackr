@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { LogEntryWithFood } from "../types/food";
 import { macroSingleTotalsLive } from "../utils/logMacroUtils";
@@ -14,23 +14,15 @@ interface Props {
 }
 
 export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Props) {
-    const inputRef = useRef<HTMLInputElement>(null);    
-    
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (inputRef.current) {
-                inputRef.current.focus();
-                inputRef.current.select();
-            }
-        }, 100);
-        return () => clearTimeout(timer);
-    }, []);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const { food, entry } = foodEntry;
 
     const [quantityStr, setQuantityStr] = useState(entry.quantity.toString());
     const [selectedUnit, setSelectedUnit] = useState(entry.selectedServing);
     const [keyboardOpen, setKeyboardOpen] = useState(true);
+    // Track whether the user has started typing, so first digit cleanly replaces initial default
+    const [isInitialInput, setIsInitialInput] = useState(true);
 
     const quantity = useMemo(() => parseQuantityString(quantityStr), [quantityStr]);
     const totalCalories = macroSingleTotalsLive(food, quantity, selectedUnit);
@@ -56,54 +48,49 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
         const input = inputRef.current;
         if (!input) return;
 
-        // get the selection positions from the HTML input
-        const start = input.selectionStart ?? 0;
-        const end = input.selectionEnd ?? 0;
+        // If user hasn't edited yet and presses a number, replace default "1"
+        if (isInitialInput && key !== "⌫" && key !== "." && key !== "/" && key !== " ") {
+            setIsInitialInput(false);
+            setQuantityStr(key);
+            return;
+        }
+
+        setIsInitialInput(false);
+
+        const start = input.selectionStart ?? quantityStr.length;
+        const end = input.selectionEnd ?? quantityStr.length;
 
         let newValue = quantityStr;
         let newCursorPos = start;
 
         if (start !== end) {
-            // case a: text is currently highlighted
             if (key === "⌫") {
-                // delete the highlighted section
                 newValue = quantityStr.slice(0, start) + quantityStr.slice(end);
                 newCursorPos = start;
             } else {
-                // get the text outside the selection to check for existing '.' or '/'
                 const remainingText = quantityStr.slice(0, start) + quantityStr.slice(end);
                 if (key === "." && remainingText.includes(".")) return;
                 if (key === "/" && remainingText.includes("/")) return;
+                if (key === " " && (start === 0 || remainingText[start - 1] === " ")) return;
 
-                // space key rules: don't start with space, and don't allow duplicate spaces
-                if (key === " " && (start === 0 || remainingText[start - 1] === " ")) {
-                    return;
-                }
-
-                // replace the highlighted selection with the new key
                 newValue = quantityStr.slice(0, start) + key + quantityStr.slice(end);
                 newCursorPos = start + key.length;
             }
         } else {
-            // case b: standard typing (no highlight)
             if (key === "⌫") {
-                // delete the single character behind the cursor
                 if (start > 0) {
                     newValue = quantityStr.slice(0, start - 1) + quantityStr.slice(start);
                     newCursorPos = start - 1;
                 }
             } else if (key === " ") {
-                // space key rules: don't duplicate trailing spaces
                 if (quantityStr && !quantityStr.endsWith(" ")) {
                     newValue = quantityStr + " ";
                     newCursorPos = newValue.length;
                 }
             } else {
-                // dot and slash constraints: only one allowed per entry
                 if (key === "." && quantityStr.includes(".")) return;
                 if (key === "/" && quantityStr.includes("/")) return;
-                
-                // append character normally
+
                 newValue = quantityStr + key;
                 newCursorPos = newValue.length;
             }
@@ -112,11 +99,11 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
         setQuantityStr(newValue);
 
         setTimeout(() => {
-            input.focus();
-            input.setSelectionRange(newCursorPos, newCursorPos);
+            if (inputRef.current) {
+                inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+            }
         }, 0);
     };
-
 
     const handleAction = (action: string) => {
         if (action === "confirm") onConfirm(handleModifiedEntry(), false);
@@ -128,98 +115,109 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
     return (
         <div className="flex flex-col h-full w-full bg-app-bg">
 
-            {/* scrollable content, tapping here dismisses the keyboard*/}
+            {/* Scrollable content */}
             <div
-                className="flex-1 overflow-y-auto px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-4"
+                className="flex-1 overflow-y-auto px-4 pt-[calc(env(safe-area-inset-top,54px)+0.75rem)] pb-4"
                 onClick={() => setKeyboardOpen(false)}
             >
-                {/* back button */}
-                <button
-                    onClick={(e) => { e.stopPropagation(); onBack(); }}
-                    className="mb-5 w-9 h-9 flex items-center justify-center bg-app-surface border border-app-border rounded-lg text-base font-bold hover:bg-app-border active:scale-95 transition-all cursor-pointer text-app-text"
-                >
-                    ←
-                </button>
+                {/* Header with Back button and Delete button */}
+                <div className="flex items-center justify-between mb-3 mt-2">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onBack(); }}
+                        className="w-9 h-9 flex items-center justify-center bg-app-surface-raised active:bg-white/15 border border-app-separator rounded-full text-app-text active:scale-95 transition-all cursor-pointer"
+                        aria-label="Go back"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                        </svg>
+                    </button>
 
-                {/* food name and brand */}
-                <div className="flex flex-col items-center text-center mb-5">
-                    <span className="text-xl font-extrabold text-app-text leading-tight">
+                    {isUpdating && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const idToRemove = entry.id ?? entry.instanceId;
+                                if (idToRemove !== undefined) {
+                                    onRemove(idToRemove);
+                                }
+                            }}
+                            className="w-9 h-9 flex items-center justify-center bg-rose-500/10 text-rose-500 rounded-full active:scale-95 transition-all cursor-pointer"
+                            aria-label="Remove item"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
+
+                {/* Food name and brand */}
+                <div className="flex flex-col items-center text-center mb-4">
+                    <span className="text-xl font-bold text-app-text leading-tight">
                         {food.name}
                     </span>
                     {food.brand && (
-                        <span className="text-xs text-app-muted font-bold uppercase tracking-wider mt-1">
+                        <span className="text-xs text-app-muted font-medium mt-1">
                             {food.brand}
                         </span>
                     )}
                 </div>
 
-                {/* macros summary card */}
-                <div className="flex flex-row items-center justify-around gap-2 py-5 px-4 bg-app-surface border border-app-border rounded-xl w-full shadow-sm">
+                {/* Macros summary card */}
+                <div className="flex flex-row items-center justify-around gap-2 py-4 px-4 bg-app-surface rounded-2xl w-full border border-app-separator">
                     <div className="flex flex-col items-center">
-                        <span className="text-4xl font-extrabold text-app-text leading-none">
+                        <span className="text-3xl font-bold text-brand leading-none tabular-nums">
                             {totalCalories.calories}
                         </span>
-                        <span className="text-[10px] text-app-muted font-bold uppercase tracking-widest mt-1.5">kcal</span>
+                        <span className="text-[11px] text-app-muted font-medium mt-1">kcal</span>
                     </div>
-                    <div className="w-[1px] h-10 bg-app-border" />
+                    <div className="w-[1px] h-8 bg-app-separator" />
                     <DetailMacroColumn percent={proteinPercent} macro={Number(totalCalories.protein)} label="protein" macroKey="protein" />
-                    <DetailMacroColumn percent={fatPercent}    macro={Number(totalCalories.fat)}     label="fat"     macroKey="fat" />
-                    <DetailMacroColumn percent={carbsPercent}  macro={Number(totalCalories.carbs)}   label="carbs"   macroKey="carbs" />
+                    <DetailMacroColumn percent={fatPercent} macro={Number(totalCalories.fat)} label="fat" macroKey="fat" />
+                    <DetailMacroColumn percent={carbsPercent} macro={Number(totalCalories.carbs)} label="carbs" macroKey="carbs" />
                 </div>
-
-                {isUpdating && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const idToRemove = entry.id ?? entry.instanceId;
-                            if (idToRemove !== undefined) {
-                                onRemove(idToRemove);
-                            }
-                        }}
-                        className="block mx-auto mt-4 text-xs text-red-500 hover:text-red-600 font-bold hover:underline cursor-pointer"
-                    >
-                        Remove
-                    </button>
-                    // would like to move the remove button up to the top right
-                    // trash can icon would be ideal
-                )}
             </div>
+
+            {/* Bottom Input & Keyboard section */}
             <div
-                className="flex-none border-t border-app-border bg-app-surface/95 backdrop-blur-md"
+                className="flex-none bg-app-surface rounded-t-3xl pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-app-separator"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* input display bar, tapping toggles keyboard */}
-                <div className="relative flex items-center w-full px-3 pt-3 pb-2">
+                {/* Input display bar */}
+                <div className="relative flex items-center w-full px-4 pt-3.5 pb-2">
                     <input
                         ref={inputRef}
                         type="text"
                         inputMode="none"
                         value={quantityStr}
-                        onClick={() => setKeyboardOpen(true)}
+                        onClick={() => {
+                            setKeyboardOpen(true);
+                            setIsInitialInput(false);
+                        }}
                         onChange={(e) => setQuantityStr(e.target.value)}
-                        onFocus={() => inputRef.current?.select()} // auto highlights on tap/focus
-                        className="w-full bg-app-bg border border-app-border rounded-lg pl-3 pr-16 py-2.5 text-xl font-extrabold text-app-text tracking-wide focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
+                        onSelect={(e) => {
+                            const len = e.currentTarget.value.length;
+                            e.currentTarget.setSelectionRange(len, len);
+                        }}
+                        className="w-full bg-app-bg border border-app-separator rounded-2xl pl-4 pr-24 py-3 text-2xl font-bold text-app-text tracking-tight focus:outline-none focus:border-brand/50 transition-all tabular-nums select-none caret-transparent"
                     />
-                    <span className="absolute right-6 top-[55%] -translate-y-1/2 text-xs font-bold text-app-muted uppercase tracking-widest pointer-events-none">
+                    <span className="absolute right-7 top-1/2 -translate-y-1/2 text-xs font-semibold text-app-muted uppercase tracking-wider pointer-events-none">
                         {selectedUnit.label}
                     </span>
                 </div>
 
-
-                {/* serving options strip */}
-                <div className="flex items-center gap-2 px-3 pb-2">
-                    <span className="text-app-muted text-sm font-bold shrink-0">⇅</span>
+                {/* Serving options pill strip */}
+                <div className="flex items-center gap-2 px-4 pb-2.5">
                     <div className="flex-1 flex gap-1.5 overflow-x-auto">
                         {food.servingOptions.map((option) => (
                             <button
                                 key={option.label}
                                 type="button"
                                 onClick={() => setSelectedUnit(option)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer shrink-0 ${
-                                    option.label === selectedUnit.label
-                                        ? "bg-brand border-brand text-white shadow-sm"
-                                        : "bg-app-bg border-app-border text-app-muted hover:border-app-muted/30"
-                                }`}
+                                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shrink-0 ${option.label === selectedUnit.label
+                                        ? "bg-brand text-white shadow-xs"
+                                        : "bg-app-surface-raised text-app-muted active:text-app-text border border-app-separator/50"
+                                    }`}
                             >
                                 {option.label}
                             </button>
@@ -227,7 +225,7 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
                     </div>
                 </div>
 
-                {/* keyboard */}
+                {/* Custom numeric keypad */}
                 <AnimatePresence>
                     {keyboardOpen && (
                         <motion.div
@@ -238,7 +236,7 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
                             transition={{ type: "spring", damping: 32, stiffness: 350 }}
                             className="overflow-hidden"
                         >
-                            <div className="px-3 pb-3 pt-1">
+                            <div className="px-4 pb-2">
                                 <NumericKeyboard
                                     layout={[
                                         ["1", "2", "3", "/"],
@@ -246,8 +244,8 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
                                         ["7", "8", "9", "⌫"],
                                         [
                                             ".", "0",
-                                            { label: "Log Foods", action: "log",     variant: "secondary" },
-                                            { label: isUpdating ? "Update" : "Add",  action: "confirm", variant: "primary" },
+                                            { label: "Log", action: "log", variant: "secondary" },
+                                            { label: isUpdating ? "Update" : "Add", action: "confirm", variant: "primary" },
                                         ],
                                     ]}
                                     onKeyPress={handleKeyPress}

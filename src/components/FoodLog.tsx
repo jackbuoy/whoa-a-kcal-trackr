@@ -52,15 +52,15 @@ export const FoodLog = ({ logs, selectedDate, onSelectFood, onAddToHour }: Props
     }, [selectedDate.toDateString()]);
 
     return (
-        <div className="relative flex-1 min-h-0 w-full rounded-2xl border border-app-border bg-app-surface/60 overflow-hidden flex flex-col">
+        <div className="relative flex-1 min-h-0 w-full overflow-hidden flex flex-col">
             <div
                 ref={scrollRef}
-                className="h-full overflow-y-auto overflow-x-hidden overscroll-y-contain px-2.5 sm:px-3 py-2 sm:py-3"
+                className="h-full overflow-y-auto overflow-x-hidden overscroll-y-contain px-0.5 py-1 pb-3"
             >
                 <div ref={contentRef} className="relative w-full min-w-0">
                     <div
                         aria-hidden
-                        className="absolute top-3.5 bottom-3.5 w-px bg-app-border left-[1.75rem] -translate-x-1/2 pointer-events-none"
+                        className="absolute top-3.5 bottom-3.5 w-px bg-app-separator left-[1.6rem] -translate-x-1/2 pointer-events-none"
                     />
 
                     <div className="flex flex-col w-full min-w-0">
@@ -68,7 +68,7 @@ export const FoodLog = ({ logs, selectedDate, onSelectFood, onAddToHour }: Props
                             <div
                                 key={hour}
                                 data-hour={hour}
-                                className={`relative py-1 sm:py-1.5 w-full min-w-0 ${foodEntries.length > 0 ? 'pb-3 sm:pb-3.5' : ''}`}
+                                className={`relative py-1 w-full min-w-0 ${foodEntries.length > 0 ? 'pb-2.5' : ''}`}
                             >
                                 <HourTotalsHeader
                                     hour={hour}
@@ -78,7 +78,7 @@ export const FoodLog = ({ logs, selectedDate, onSelectFood, onAddToHour }: Props
                                 />
 
                                 {foodEntries.length > 0 && (
-                                    <div className="flex flex-col gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 ml-[calc(3.5rem+0.5rem)] min-w-0">
+                                    <div className="flex flex-col gap-2 mt-1.5 ml-6 min-w-0">
                                         {foodEntries.map((log) => (
                                             <FoodCard
                                                 key={log.entry.id ?? log.entry.instanceId}
@@ -94,8 +94,8 @@ export const FoodLog = ({ logs, selectedDate, onSelectFood, onAddToHour }: Props
                 </div>
             </div>
 
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-5 bg-gradient-to-b from-app-surface to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-app-surface to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-app-bg to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-app-bg to-transparent" />
         </div>
     );
 };

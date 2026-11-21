@@ -16,8 +16,8 @@ export default defineConfig({
         name: 'whoa-a-kcal-trackr',
         short_name: 'wakct',
         description: 'opinionated, local-first calorie & macro tracker',
-        theme_color: '#09090b',
-        background_color: '#09090b',
+        theme_color: '#000000',
+        background_color: '#000000',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

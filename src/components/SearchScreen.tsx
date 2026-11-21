@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect, type FocusEvent, type MouseEvent } from "react";
+import { useState, useRef, useLayoutEffect, useEffect, type FocusEvent, type MouseEvent } from "react";
 import { AnimatePresence } from "motion/react";
 import type { Food, LogEntryWithFood } from "../types/food";
 import { useFoodSearch } from "../hooks/useFoodSearch";
@@ -9,6 +9,8 @@ interface Props {
     onAdd: (log: LogEntryWithFood) => void;
     onSelectFood: (log: LogEntryWithFood) => void;
     onEnteredSearchInput: () => void;
+    plateCount?: number;
+    onLogPlate?: () => void;
 }
 
 export const SearchScreen = ({
@@ -16,6 +18,8 @@ export const SearchScreen = ({
     onAdd,
     onSelectFood,
     onEnteredSearchInput,
+    plateCount = 0,
+    onLogPlate,
 }: Props) => {
 
     const headerRef = useRef<HTMLDivElement>(null);
@@ -26,20 +30,30 @@ export const SearchScreen = ({
 
     const { combinedResults, isSearching } = useFoodSearch(query);
 
+    // Keep window clamped at (0, 0) so iOS PWA virtual keyboard NEVER pans the root window off-screen
+    useEffect(() => {
+        const clampScroll = () => {
+            if (window.scrollY !== 0 || window.scrollX !== 0) {
+                window.scrollTo(0, 0);
+            }
+        };
+        window.addEventListener('scroll', clampScroll, { passive: true });
+        return () => window.removeEventListener('scroll', clampScroll);
+    }, []);
+
     useLayoutEffect(() => {
         if (headerRef.current) {
-            // read the rendered pixel height of the search header/search navbar
             onHeaderHeightReady(headerRef.current.offsetHeight);
         }
-    }, [onHeaderHeightReady])
+    }, [onHeaderHeightReady]);
 
     const buildLogEntry = (food: Food): LogEntryWithFood => ({
         food,
         entry: {
             foodId: food.id,
-            timestamp: 0,                       // set at commit time
-            quantity: 1,                         // default quantity
-            selectedServing: food.servingOptions[0], // default to first option
+            timestamp: 0,
+            quantity: 1,
+            selectedServing: food.servingOptions[0],
         }
     });
 
@@ -64,15 +78,20 @@ export const SearchScreen = ({
     };
 
     return (
-        <div className="h-full flex flex-col overflow-x-hidden">
-            <div ref={headerRef} className="p-4 flex gap-2.5 bg-app-bg border-b border-app-border items-center">
+        <div className="h-full w-full flex flex-col overflow-hidden bg-app-bg">
+            {/* Header: fixed/pinned at top of search screen, with integrated Log button */}
+            <div ref={headerRef} className="flex-none shrink-0 p-4 pb-2.5 flex gap-2 bg-app-bg items-center">
                 <input
                     id="search-food-input"
                     autoFocus
+                    value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search for a food..."
-                    className="flex-1 p-3.5 bg-app-surface rounded-2xl border border-app-border text-app-text placeholder-app-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm transition-all text-base min-w-0"
-                    onFocus={handleSearchFocus}
+                    className="flex-1 h-11 px-3.5 bg-app-surface border border-app-separator rounded-2xl text-app-text placeholder-app-muted focus:outline-none focus:border-brand/50 transition-all text-[15px] min-w-0"
+                    onFocus={(e) => {
+                        handleSearchFocus(e);
+                        window.scrollTo(0, 0);
+                    }}
                     onMouseUp={handleSearchMouseUp}
                     onBlur={() => { justFocusedRef.current = false; }}
                 />
@@ -82,35 +101,53 @@ export const SearchScreen = ({
                         setIsScannerOpen(true);
                     }}
                     title="Scan Barcode"
-                    className="flex-none p-3.5 bg-app-surface border border-app-border rounded-2xl text-app-text hover:border-brand hover:text-brand active:scale-95 transition-all shadow-sm cursor-pointer flex items-center justify-center"
+                    className="flex-none w-11 h-11 bg-app-surface active:bg-app-surface-raised border border-app-separator rounded-2xl text-app-muted active:text-brand active:scale-95 transition-all cursor-pointer flex items-center justify-center"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m-4-16v16m8-16v16M4 4v16m16-16v16" />
                     </svg>
                 </button>
+                {/* Log Foods button cleanly integrated in the search bar */}
+                {plateCount > 0 && onLogPlate && (
+                    <button
+                        onClick={onLogPlate}
+                        title="Log Plate"
+                        className="flex-none h-11 px-4 bg-brand hover:bg-brand-hover text-white font-semibold rounded-2xl active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 text-[14px] shadow-sm shadow-brand/20 shrink-0 border border-transparent"
+                    >
+                        <span>Log</span>
+                        <span className="text-white/85 font-normal text-xs tabular-nums">({plateCount})</span>
+                    </button>
+                )}
             </div>
-            <div className="flex-1 overflow-y-auto px-4 py-3">
-                {combinedResults.length === 0 ? (
-                    <span className="block p-4 bg-app-surface rounded-2xl text-app-muted border border-app-border text-sm text-center shadow-sm">
+
+            {/* Results: scrolls independently when results exist; strictly locked when empty so keyboard cannot pan page */}
+            {combinedResults.length === 0 ? (
+                <div 
+                    className="flex-1 min-h-0 overflow-hidden flex flex-col items-center justify-start pt-8 px-4 touch-none select-none"
+                    onTouchMove={(e) => e.preventDefault()}
+                >
+                    <span className="block p-4 text-app-muted text-sm text-center">
                         {isSearching ? 'Searching database...' : 'No results found'}
                     </span>
-                ) : (
-                    <div className="flex flex-col gap-2.5">
+                </div>
+            ) : (
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-4 py-2 pb-6">
+                    <div className="flex flex-col gap-2">
                         {combinedResults.map((food) => (
                             <div
                                 key={food.id}
-                                className="flex items-center justify-between p-3 bg-app-surface rounded-2xl hover:bg-app-surface/60 hover:border-app-muted/30 transition-all cursor-pointer border border-app-border shadow-sm"
+                                className="flex items-center justify-between p-3 bg-app-surface rounded-2xl active:bg-app-surface-raised transition-colors cursor-pointer"
                                 onClick={() => onSelectFood(buildLogEntry(food))}
                             >
                                 <div className="flex items-center gap-3 min-w-0 overflow-hidden">
-                                    <span className="text-2xl w-10 h-10 flex items-center justify-center bg-app-bg border border-app-border rounded-xl">{food.icon}</span>
+                                    <span className="text-2xl w-10 h-10 flex items-center justify-center bg-app-bg rounded-xl shrink-0">{food.icon}</span>
                                     <div className="flex flex-col min-w-0">
-                                        <span className="font-bold text-app-text text-sm truncate">{food.name}</span>
+                                        <span className="font-semibold text-app-text text-sm truncate">{food.name}</span>
                                         <span className="text-xs text-app-muted">{food.brand}</span>
                                     </div>
                                 </div>
                                 <button
-                                    className="w-8 h-8 flex items-center justify-center bg-brand-muted text-brand rounded-full hover:bg-brand hover:text-white transition-all active:scale-90 cursor-pointer"
+                                    className="w-8 h-8 flex items-center justify-center bg-brand-muted text-brand rounded-full hover:bg-brand hover:text-white transition-all active:scale-90 cursor-pointer shrink-0"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onAdd(buildLogEntry(food));
@@ -121,11 +158,11 @@ export const SearchScreen = ({
                             </div>
                         ))}
                     </div>
-                )}
-                {isSearching && combinedResults.length > 0 && (
-                    <span className="block p-3 text-app-muted text-xs font-semibold text-center">Searching online for more...</span>
-                )}
-            </div>
+                    {isSearching && (
+                        <span className="block p-3 text-app-muted text-xs font-medium text-center">Searching online for more...</span>
+                    )}
+                </div>
+            )}
 
             <AnimatePresence>
                 {isScannerOpen && (
@@ -137,4 +174,4 @@ export const SearchScreen = ({
             </AnimatePresence>
         </div>
     );
-}
+};

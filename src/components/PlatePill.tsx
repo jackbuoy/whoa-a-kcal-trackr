@@ -15,29 +15,20 @@ export const PlatePill = ({plate, isOpen}: Props) => {
     const additionalCount = plate.length > 1 ? plate.length - 1 : 0;
     
     return (
-        <div className="flex items-center gap-2 px-3 py-1 bg-app-surface border border-app-border rounded-full shadow-sm transition-all hover:border-app-muted/30 active:scale-95 cursor-pointer text-app-text">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface-raised rounded-full active:scale-95 transition-all cursor-pointer text-app-text">
             
-            <span className="text-xl">{latestFood ? latestFood.food.icon : "🍽️"}</span>
+            <span className="text-lg">{latestFood ? latestFood.food.icon : "🍽️"}</span>
             
             {additionalCount > 0 && (
-                <span className="text-sm font-bold text-app-muted">
+                <span className="text-xs font-semibold text-app-muted">
                     +{additionalCount}
                 </span>
             )}
             
 
-            <div className={`ml-1 transition-transform duration-300 text-app-muted text-xs ${isOpen ? 'rotate-180' : 'rotate-0'}`}>
+            <div className={`transition-transform duration-200 text-app-muted text-[10px] ${isOpen ? 'rotate-180' : 'rotate-0'}`}>
                 ▼
             </div>
-                
-                {/* {plate.map((food) => (
-                    <span
-                        key={food.id}
-                        className="flex p-1 gap-5 bg-zinc-800 rounded-2xl"
-                    >
-                        {food.icon}
-                    </span>
-                ))} */}
         </div>
     );
 }

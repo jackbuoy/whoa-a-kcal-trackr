@@ -24,8 +24,8 @@ export const NumericKeyboard = ({ layout, onKeyPress, onAction }: Props) => {
 
         if (typeof cell === "string") {
             const isBackspace = cell === "⌫";
-            const isSpace    = cell === " ";
-            const displayLabel = isSpace ? "⌴" : cell; // show visible placeholder for space key
+            const isSpecial = cell === "/" || cell === " " || cell === "⌫" || cell === ".";
+            const displayLabel = cell === " " ? "␣" : cell;
 
             return (
                 <button
@@ -33,13 +33,19 @@ export const NumericKeyboard = ({ layout, onKeyPress, onAction }: Props) => {
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => onKeyPress(cell)}
-                    className={`flex-1 py-3 rounded-2xl text-base font-bold flex items-center justify-center transition-all active:scale-90 cursor-pointer select-none ${
-                        isBackspace || isSpace
-                            ? "bg-app-bg border border-app-border text-app-muted hover:bg-app-border"
-                            : "bg-app-bg border border-app-border text-app-text hover:bg-app-border"
+                    className={`flex-1 h-13 rounded-2xl flex items-center justify-center transition-all active:scale-[0.93] active:brightness-125 cursor-pointer select-none border border-white/[0.08] shadow-[0_1.5px_2px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] ${
+                        isSpecial
+                            ? "bg-app-surface text-app-muted text-[17px] font-medium"
+                            : "bg-app-surface-raised text-app-text text-[22px] font-medium tabular-nums"
                     }`}
                 >
-                    {displayLabel}
+                    {isBackspace ? (
+                        <svg className="w-5 h-5 text-app-muted" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z" />
+                        </svg>
+                    ) : (
+                        displayLabel
+                    )}
                 </button>
             );
         }
@@ -51,10 +57,10 @@ export const NumericKeyboard = ({ layout, onKeyPress, onAction }: Props) => {
                 key={`${rowIndex}-${colIndex}`}
                 type="button"
                 onClick={() => onAction?.(cell.action)}
-                className={`flex-1 py-3 px-2 rounded-2xl text-[11px] font-extrabold uppercase tracking-widest transition-all active:scale-95 cursor-pointer select-none ${
+                className={`flex-1 h-13 px-2 rounded-2xl text-[14px] transition-all active:scale-[0.94] cursor-pointer select-none font-semibold ${
                     isPrimary
-                        ? "bg-brand text-white hover:bg-brand-hover shadow-sm shadow-brand/10"
-                        : "bg-app-bg border border-app-border text-app-text hover:bg-app-border"
+                        ? "bg-gradient-to-b from-[#FF9F0A] to-[#E8900A] text-white shadow-[0_2px_10px_rgba(255,159,10,0.35),inset_0_1px_0_rgba(255,255,255,0.25)] border border-transparent font-bold"
+                        : "bg-app-surface-raised text-brand border border-brand/25 shadow-[0_1.5px_2px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.06)] active:bg-brand/10"
                 }`}
             >
                 {cell.label}

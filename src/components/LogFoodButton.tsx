@@ -5,7 +5,7 @@ interface Props {
 export const LogFoodButton = ({onLog}: Props) => {
     return (
         <button
-            className="bg-brand hover:bg-brand-hover shadow-md shadow-brand/10 px-6 py-3 rounded-full text-white font-extrabold text-xs uppercase tracking-widest transition-all active:scale-95 cursor-pointer"
+            className="bg-brand shadow-lg shadow-brand/20 px-6 py-3.5 rounded-full text-white font-bold text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
             onClick={onLog}
         >
             Log Foods

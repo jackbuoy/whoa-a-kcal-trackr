@@ -39,7 +39,7 @@ export const WheelColumn = <T,>({
                 WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 20%, black 80%, transparent)'
             }}
         >
-            <div className="absolute top-1/2 -mt-6 w-full h-12 border-y border-zinc-700 bg-zinc-800/20 pointer-events-none z-10" />
+            <div className="absolute top-1/2 -mt-6 w-full h-12 border-y border-app-border/40 bg-app-surface-raised/40 rounded-lg pointer-events-none z-10" />
             <motion.div
                 drag="y"
                 dragConstraints={{
@@ -57,7 +57,7 @@ export const WheelColumn = <T,>({
                 {values.map((item, index) => (
                     <div
                         key={index}
-                        className="h-12 flex items-center justify-center text-white"
+                        className="h-12 flex items-center justify-center text-app-text font-medium"
                         style={{ height: itemHeight }}
                     >
                         {renderItem(item)}
@@ -65,6 +65,5 @@ export const WheelColumn = <T,>({
                 ))}
             </motion.div>
         </div>
-        
     );
 }
