@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['wakct-icon.png'],
+      includeAssets: ['wakct-icon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'whoa-a-kcal-trackr',
         short_name: 'wakct',
@@ -22,7 +22,7 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: '/wakct-icon.png',
+            src: '/apple-touch-icon.png',
             sizes: '1024x1024',
             type: 'image/png',
             purpose: 'any maskable'
