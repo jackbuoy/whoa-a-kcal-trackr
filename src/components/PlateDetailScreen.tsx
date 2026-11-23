@@ -44,10 +44,10 @@ export const PlateDetailScreen = ({ plate = [], onSelectFood, loggedEntries = []
                         ))}
                     </div>
 
-                    {/* plate macro totals & daily progression visualizer */}
+                    {/* plate nutrition summary */}
                     <PlateNutritionSummary plate={plate} loggedEntries={loggedEntries} />
 
-                    {/* Prominent Log Plate action inside Plate view (avoids overlapping bottom bar) */}
+                    {/* log plate action */}
                     {onLogPlate && (
                         <div className="pt-1 pb-4">
                             <button

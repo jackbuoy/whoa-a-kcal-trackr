@@ -46,7 +46,7 @@
   }
 }
 
-/* Core app styles & lock viewport to prevent iOS PWA window-panning when keyboard opens */
+/* lock viewport bounds */
 html, body {
   background-color: var(--app-bg);
   color: var(--app-text);

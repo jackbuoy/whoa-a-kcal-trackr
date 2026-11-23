@@ -30,8 +30,9 @@ export async function fetchFoodByBarcode(barcode: string): Promise<Food | null> 
     try {
         const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(cleanBarcode)}.json`;
         const response = await fetch(url, {
+            method: "GET",
             headers: {
-                "User-Agent": "WhoaAKcalTrackr/v0.72 (https://github.com/whoa-a-kcal-trackr)",
+                "User-Agent": "whoa-a-kcal-trackr - WebApp - Version 1.0 (https://github.com/whoa-a-kcal-trackr)",
             },
         });
 
@@ -50,41 +51,41 @@ export async function fetchFoodByBarcode(barcode: string): Promise<Food | null> 
             typeof nutriments["energy-kcal_100g"] === "number"
                 ? nutriments["energy-kcal_100g"]
                 : typeof nutriments["energy-kcal_value"] === "number"
-                ? nutriments["energy-kcal_value"]
-                : typeof nutriments["energy-kcal"] === "number"
-                ? nutriments["energy-kcal"]
-                : typeof nutriments["energy_100g"] === "number"
-                ? nutriments["energy_100g"] / 4.184
-                : typeof nutriments["energy_value"] === "number"
-                ? nutriments["energy_value"] / 4.184
-                : null;
+                    ? nutriments["energy-kcal_value"]
+                    : typeof nutriments["energy-kcal"] === "number"
+                        ? nutriments["energy-kcal"]
+                        : typeof nutriments["energy_100g"] === "number"
+                            ? nutriments["energy_100g"] / 4.184
+                            : typeof nutriments["energy_value"] === "number"
+                                ? nutriments["energy_value"] / 4.184
+                                : null;
 
         const protein =
             typeof nutriments["proteins_100g"] === "number"
                 ? nutriments["proteins_100g"]
                 : typeof nutriments["proteins_value"] === "number"
-                ? nutriments["proteins_value"]
-                : typeof nutriments["proteins"] === "number"
-                ? nutriments["proteins"]
-                : 0;
+                    ? nutriments["proteins_value"]
+                    : typeof nutriments["proteins"] === "number"
+                        ? nutriments["proteins"]
+                        : 0;
 
         const fat =
             typeof nutriments["fat_100g"] === "number"
                 ? nutriments["fat_100g"]
                 : typeof nutriments["fat_value"] === "number"
-                ? nutriments["fat_value"]
-                : typeof nutriments["fat"] === "number"
-                ? nutriments["fat"]
-                : 0;
+                    ? nutriments["fat_value"]
+                    : typeof nutriments["fat"] === "number"
+                        ? nutriments["fat"]
+                        : 0;
 
         const carbs =
             typeof nutriments["carbohydrates_100g"] === "number"
                 ? nutriments["carbohydrates_100g"]
                 : typeof nutriments["carbohydrates_value"] === "number"
-                ? nutriments["carbohydrates_value"]
-                : typeof nutriments["carbohydrates"] === "number"
-                ? nutriments["carbohydrates"]
-                : 0;
+                    ? nutriments["carbohydrates_value"]
+                    : typeof nutriments["carbohydrates"] === "number"
+                        ? nutriments["carbohydrates"]
+                        : 0;
 
         // if calories is missing but macros exist, calculate from macros
         if (calories === null) {
@@ -110,7 +111,7 @@ export async function fetchFoodByBarcode(barcode: string): Promise<Food | null> 
         if (product.serving_size) {
             const rawServingSize = product.serving_size.trim();
             let multiplier = typeof product.serving_quantity === "number" ? product.serving_quantity : parseFloat(String(product.serving_quantity || ""));
-            
+
             if (isNaN(multiplier) || multiplier <= 0) {
                 const match = rawServingSize.match(/([\d.]+)\s*(g|ml|oz)/i);
                 if (match) {

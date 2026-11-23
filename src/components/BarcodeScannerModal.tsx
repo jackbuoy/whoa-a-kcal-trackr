@@ -33,6 +33,13 @@ export function BarcodeScannerModal({ onClose, onFoodFound }: Props) {
     const [zoomMax, setZoomMax] = useState(2);
     const [isVideoReady, setIsVideoReady] = useState(false);
 
+    const handleVideoPlaying = useCallback(() => {
+        // Wait for next animation frame so WebKit finishes initial buffer scaling
+        requestAnimationFrame(() => {
+            setIsVideoReady(true);
+        });
+    }, []);
+
     const isLoadingRef = useRef(isLoading);
     const scanSuccessRef = useRef(scanSuccess);
     useEffect(() => {
@@ -92,6 +99,11 @@ export function BarcodeScannerModal({ onClose, onFoodFound }: Props) {
             setErrorMessage(`No product found for barcode: ${barcode}. Try entering details manually.`);
         }
     }, [onFoodFound, onClose, stopAllStreams]);
+
+    const handleBarcodeDetectedRef = useRef(handleBarcodeDetected);
+    useEffect(() => {
+        handleBarcodeDetectedRef.current = handleBarcodeDetected;
+    }, [handleBarcodeDetected]);
 
     const toggleTorch = useCallback(async () => {
         const stream = mediaStreamRef.current;
@@ -183,7 +195,7 @@ export function BarcodeScannerModal({ onClose, onFoodFound }: Props) {
                 try {
                     const barcodes = await detector.detect(video);
                     if (barcodes.length > 0 && barcodes[0].rawValue) {
-                        handleBarcodeDetected(barcodes[0].rawValue);
+                        handleBarcodeDetectedRef.current(barcodes[0].rawValue);
                         return;
                     }
                 } catch (e) {
@@ -197,6 +209,8 @@ export function BarcodeScannerModal({ onClose, onFoodFound }: Props) {
         };
 
         const startZxingScanner = async () => {
+            if (!videoRef.current) return;
+
             const hints = new Map<DecodeHintType, unknown>();
             hints.set(DecodeHintType.POSSIBLE_FORMATS, [
                 BarcodeFormat.EAN_13,
@@ -204,39 +218,53 @@ export function BarcodeScannerModal({ onClose, onFoodFound }: Props) {
                 BarcodeFormat.UPC_A,
                 BarcodeFormat.UPC_E,
                 BarcodeFormat.CODE_128,
+                BarcodeFormat.CODE_39,
             ]);
             hints.set(DecodeHintType.TRY_HARDER, true);
 
             const zxingReader = new BrowserMultiFormatReader(hints, 200);
             readerRef.current = zxingReader;
 
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { ideal: "environment" },
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 },
+            await zxingReader.decodeFromConstraints(
+                {
+                    video: {
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                    },
                 },
-            });
+                videoRef.current,
+                (result) => {
+                    if (isMounted && result && !isLoadingRef.current && !scanSuccessRef.current) {
+                        handleBarcodeDetectedRef.current(result.getText());
+                    }
+                }
+            );
 
             if (!isMounted) {
-                stream.getTracks().forEach((t) => t.stop());
+                const staleStream = videoRef.current.srcObject as MediaStream | null;
+                staleStream?.getTracks().forEach((track) => track.stop());
+                if (videoRef.current) videoRef.current.srcObject = null;
                 return;
             }
 
+            const stream = videoRef.current.srcObject as MediaStream | null;
             mediaStreamRef.current = stream;
             setHasCameraPermission(true);
-
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                await videoRef.current.play().catch(() => { });
-            }
-
-            await zxingReader.decodeFromVideoElementContinuously(videoRef.current!, (result) => {
-                if (!isMounted) return;
-                if (result && !isLoadingRef.current && !scanSuccessRef.current) {
-                    handleBarcodeDetected(result.getText());
+            if (stream) {
+                const videoTrack = stream.getVideoTracks()[0];
+                if (videoTrack?.getCapabilities) {
+                    const caps = (videoTrack.getCapabilities() || {}) as {
+                        torch?: boolean;
+                        zoom?: { min: number; max: number };
+                    };
+                    setHasTorch(Boolean(caps.torch));
+                    if (caps.zoom) {
+                        setHasZoom(true);
+                        setZoomMax(caps.zoom.max || 2);
+                    }
                 }
-            });
+            }
         };
 
         const startScanner = async () => {
@@ -273,15 +301,15 @@ export function BarcodeScannerModal({ onClose, onFoodFound }: Props) {
             if (nativeLoopTimer !== null) clearTimeout(nativeLoopTimer);
             stopAllStreams();
         };
-    }, [stopAllStreams, handleBarcodeDetected]);
+    }, [stopAllStreams]);
 
     const handleManualSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
         if (manualBarcode.trim()) {
             setIsManualInputOpen(false);
-            handleBarcodeDetected(manualBarcode.trim());
+            handleBarcodeDetectedRef.current(manualBarcode.trim());
         }
-    }, [manualBarcode, handleBarcodeDetected]);
+    }, [manualBarcode]);
 
     return (
         <motion.div
@@ -291,7 +319,7 @@ export function BarcodeScannerModal({ onClose, onFoodFound }: Props) {
             transition={{ type: "spring", damping: 28, stiffness: 280 }}
             className="absolute inset-0 z-30 bg-app-bg flex flex-col overflow-hidden"
         >
-            {/* Header: bounded cleanly inside workspace, stops right below the navbar */}
+            {/* header */}
             <div className="flex-none shrink-0 flex items-center justify-between px-4 py-3 border-b border-app-separator bg-app-bg z-30">
                 <button
                     onClick={onClose}
@@ -309,19 +337,28 @@ export function BarcodeScannerModal({ onClose, onFoodFound }: Props) {
                 </button>
             </div>
 
-            {/* camera viewport container */}
+            {/* viewfinder */}
             <div className="relative flex-1 bg-black overflow-hidden flex items-center justify-center">
+                {/* Warming up indicator: hides initial frame negotiation */}
+                {!isVideoReady && hasCameraPermission !== false && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-black z-10 pointer-events-none">
+                        <div className="w-7 h-7 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
+                        <span className="text-xs text-app-muted font-medium">Starting camera...</span>
+                    </div>
+                )}
+
                 <video
                     ref={videoRef}
                     playsInline
                     autoPlay
                     muted
-                    onLoadedData={() => setIsVideoReady(true)}
-                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${isVideoReady ? "opacity-100" : "opacity-0"
-                        }`}
+                    onPlaying={handleVideoPlaying}
+                    className={`absolute inset-0 w-full h-full min-w-full min-h-full object-cover transition-opacity duration-300 ${
+                        isVideoReady ? "opacity-100" : "opacity-0 pointer-events-none"
+                    }`}
                 />
 
-                {/* dark viewfinder mask overlay around cutout */}
+                {/* guide overlay */}
                 {hasCameraPermission !== false && (
                     <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                         <div
@@ -350,7 +387,7 @@ export function BarcodeScannerModal({ onClose, onFoodFound }: Props) {
                     </div>
                 )}
 
-                {/* floating action controls overlay over camera */}
+                {/* controls */}
                 <div className="absolute top-4 inset-x-4 flex items-center justify-between z-20 pointer-events-auto">
                     <div
                         className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-colors shadow-sm ${scanSuccess
@@ -462,10 +499,10 @@ export function BarcodeScannerModal({ onClose, onFoodFound }: Props) {
                 )}
             </div>
 
-            {/* floating manual barcode entry dialog */}
+            {/* manual entry modal */}
             <AnimatePresence>
                 {isManualInputOpen && (
-                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-36 bg-black/70 backdrop-blur-sm">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}

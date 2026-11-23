@@ -34,7 +34,7 @@ export const DateSelectModal = ({date, onChangeTime, onBack, onLogAtTime}: Props
 
     return (
         <div className="flex flex-col h-full bg-app-surface rounded-t-3xl overflow-hidden pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-            {/* iOS sheet grab bar */}
+            {/* handle */}
             <div className="w-9 h-1 bg-app-muted/30 rounded-full mx-auto mt-2.5 mb-1" />
 
             <div className="flex justify-between items-center px-4 py-3 border-b border-app-separator">

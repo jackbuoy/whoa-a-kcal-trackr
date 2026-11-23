@@ -30,7 +30,7 @@ function App() {
   const [activeFood, setActiveFood] = useState<LogEntryWithFood | null>(null);
   const [searchHeaderHeight, setSearchHeaderHeight] = useState(64);
   const [isSettingTime, setIsSettingTime] = useState(false);
-  // Track date/time before opening search for a specific hour so we can cleanly revert back
+  // snapshot time before targeting an hour slot, restored on exit
   const preSearchDateRef = useRef<Date | null>(null);
 
   // lock scrolling while activeFood is set, for FoodDetailModal
@@ -40,7 +40,7 @@ function App() {
   }, [activeFood]);
 
   const exitWorkspace = () => {
-    // Revert time back to current time (if viewing today) or to pre-search date/time
+    // reset back to current clock or saved hour
     const isToday = selectedDate.toDateString() === new Date().toDateString();
     if (isToday) {
       setSelectedDate(new Date());
@@ -94,11 +94,11 @@ function App() {
   const handleOpenSearch = (date?: Date) => {
     flushSync(() => {
       if (date) {
-        // User clicked a specific hour's '+' button (e.g. 7 PM): preserve current date and set time to 7 PM
+        // target specific hour slot
         preSearchDateRef.current = new Date(selectedDate);
         setSelectedDate(date);
       } else {
-        // User clicked general bottom search: if today, ensure time reflects right now
+        // general search, keep clock fresh if viewing today
         const isToday = selectedDate.toDateString() === new Date().toDateString();
         if (isToday) {
           setSelectedDate(new Date());
@@ -129,8 +129,8 @@ function App() {
             onSelectFood={setActiveFood}
             onAddToHour={handleOpenSearch}
           />
-          {/* Edge-to-edge docked bottom bar: lowered cleanly to eliminate distracting bottom gap */}
-          <div className="-mx-4 px-4 pt-1 pb-[max(0.25rem,calc(env(safe-area-inset-bottom,21px)-18px))] bg-app-bg/95 border-t border-app-separator backdrop-blur-xl flex-none pt-2">
+          {/* docked bottom bar */}
+          <div className="-mx-4 px-4 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-app-bg/95 border-t border-app-separator backdrop-blur-xl flex-none">
             <AddFoodButton onClick={() => handleOpenSearch()} />
           </div>
         </div>
@@ -147,7 +147,7 @@ function App() {
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
             className="fixed inset-0 z-8 bg-app-bg flex flex-col h-dvh w-full overflow-hidden"
           >
-            {/* persistent header: aligned with dashboard safe-area height so blur NEVER bleeds into it */}
+            {/* persistent workspace header */}
             <nav className="flex-none shrink-0 pt-[calc(env(safe-area-inset-top,54px)+0.75rem)] px-4 pb-3 border-b border-app-separator flex justify-between items-center bg-app-bg z-20 mt-2">
               <button
                 onClick={() => {

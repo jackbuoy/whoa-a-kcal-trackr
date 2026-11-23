@@ -30,7 +30,7 @@ export const SearchScreen = ({
 
     const { combinedResults, isSearching } = useFoodSearch(query);
 
-    // Keep window clamped at (0, 0) so iOS PWA virtual keyboard NEVER pans the root window off-screen
+    // lock scroll position when virtual keyboard opens
     useEffect(() => {
         const clampScroll = () => {
             if (window.scrollY !== 0 || window.scrollX !== 0) {
@@ -79,7 +79,7 @@ export const SearchScreen = ({
 
     return (
         <div className="h-full w-full flex flex-col overflow-hidden bg-app-bg">
-            {/* Header: fixed/pinned at top of search screen, with integrated Log button */}
+            {/* search bar */}
             <div ref={headerRef} className="flex-none shrink-0 p-4 pb-2.5 flex gap-2 bg-app-bg items-center">
                 <input
                     id="search-food-input"
@@ -107,7 +107,7 @@ export const SearchScreen = ({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m-4-16v16m8-16v16M4 4v16m16-16v16" />
                     </svg>
                 </button>
-                {/* Log Foods button cleanly integrated in the search bar */}
+                {/* log plate shortcut */}
                 {plateCount > 0 && onLogPlate && (
                     <button
                         onClick={onLogPlate}
@@ -120,7 +120,7 @@ export const SearchScreen = ({
                 )}
             </div>
 
-            {/* Results: scrolls independently when results exist; strictly locked when empty so keyboard cannot pan page */}
+            {/* results list */}
             {combinedResults.length === 0 ? (
                 <div 
                     className="flex-1 min-h-0 overflow-hidden flex flex-col items-center justify-start pt-8 px-4 touch-none select-none"

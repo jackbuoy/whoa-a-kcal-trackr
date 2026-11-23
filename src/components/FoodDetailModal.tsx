@@ -21,7 +21,7 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
     const [quantityStr, setQuantityStr] = useState(entry.quantity.toString());
     const [selectedUnit, setSelectedUnit] = useState(entry.selectedServing);
     const [keyboardOpen, setKeyboardOpen] = useState(true);
-    // Track whether the user has started typing, so first digit cleanly replaces initial default
+    // clear default value on first keystroke
     const [isInitialInput, setIsInitialInput] = useState(true);
 
     const quantity = useMemo(() => parseQuantityString(quantityStr), [quantityStr]);
@@ -48,7 +48,6 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
         const input = inputRef.current;
         if (!input) return;
 
-        // If user hasn't edited yet and presses a number, replace default "1"
         if (isInitialInput && key !== "⌫" && key !== "." && key !== "/" && key !== " ") {
             setIsInitialInput(false);
             setQuantityStr(key);
@@ -115,12 +114,10 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
     return (
         <div className="flex flex-col h-full w-full bg-app-bg">
 
-            {/* Scrollable content */}
             <div
                 className="flex-1 overflow-y-auto px-4 pt-[calc(env(safe-area-inset-top,54px)+0.75rem)] pb-4"
                 onClick={() => setKeyboardOpen(false)}
             >
-                {/* Header with Back button and Delete button */}
                 <div className="flex items-center justify-between mb-3 mt-2">
                     <button
                         onClick={(e) => { e.stopPropagation(); onBack(); }}
@@ -151,7 +148,6 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
                     )}
                 </div>
 
-                {/* Food name and brand */}
                 <div className="flex flex-col items-center text-center mb-4">
                     <span className="text-xl font-bold text-app-text leading-tight">
                         {food.name}
@@ -163,7 +159,7 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
                     )}
                 </div>
 
-                {/* Macros summary card */}
+                {/* macro summary */}
                 <div className="flex flex-row items-center justify-around gap-2 py-4 px-4 bg-app-surface rounded-2xl w-full border border-app-separator">
                     <div className="flex flex-col items-center">
                         <span className="text-3xl font-bold text-brand leading-none tabular-nums">
@@ -178,12 +174,11 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
                 </div>
             </div>
 
-            {/* Bottom Input & Keyboard section */}
+            {/* quantity & keypad */}
             <div
                 className="flex-none bg-app-surface rounded-t-3xl pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-app-separator"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Input display bar */}
                 <div className="relative flex items-center w-full px-4 pt-3.5 pb-2">
                     <input
                         ref={inputRef}
@@ -206,7 +201,7 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
                     </span>
                 </div>
 
-                {/* Serving options pill strip */}
+                {/* serving units */}
                 <div className="flex items-center gap-2 px-4 pb-2.5">
                     <div className="flex-1 flex gap-1.5 overflow-x-auto">
                         {food.servingOptions.map((option) => (
@@ -225,7 +220,7 @@ export function FoodDetailModal({ foodEntry, onConfirm, onBack, onRemove }: Prop
                     </div>
                 </div>
 
-                {/* Custom numeric keypad */}
+                {/* keypad */}
                 <AnimatePresence>
                     {keyboardOpen && (
                         <motion.div

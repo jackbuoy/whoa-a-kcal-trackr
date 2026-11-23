@@ -1,4 +1,4 @@
-// Unified macro color tokens used across the app.
+// macro theme colors
 export const MACRO_COLORS = {
     calories: {
         textClass: "text-brand",

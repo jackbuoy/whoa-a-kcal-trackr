@@ -37,7 +37,7 @@ export const PlateNutritionSummary = ({ plate = [], loggedEntries = [] }: Props)
 
     return (
         <div className="mb-4 p-4 bg-app-surface rounded-2xl flex flex-col gap-3.5">
-            {/* Header with iOS-style segmented controller */}
+            {/* view mode toggle */}
             <div className="flex justify-between items-center pb-1">
                 <span className="text-[13px] font-semibold text-app-muted">
                     Nutrition Overview
@@ -69,7 +69,7 @@ export const PlateNutritionSummary = ({ plate = [], loggedEntries = [] }: Props)
                 </div>
             </div>
 
-            {/* Grid of the 4 macro cards */}
+            {/* macro cards */}
             <div className="grid grid-cols-2 gap-2.5">
                 {MACRO_CONFIGS.map(({ key, label, unit, goal }) => {
                     const { textClass: textColorClass, dotClass: colorClass } = MACRO_COLORS[key];
@@ -104,7 +104,6 @@ export const PlateNutritionSummary = ({ plate = [], loggedEntries = [] }: Props)
                                 </span>
                             </div>
 
-                            {/* Minimal progress bar */}
                             <div className="w-full h-1.5 bg-app-surface-raised rounded-full overflow-hidden flex relative mt-0.5">
                                 {loggedPercent > 0 && (
                                     <div
