@@ -1,102 +1,151 @@
 # whoa, a kcal trackr!
 
-a calorie and macro tracker that stays out of your way, works offline, and stores your data right on your device
+a calorie and macro tracker that works offline, has no accounts or ads, and keeps your data on your own device
+
+**[try the live demo](https://TODO-your-demo-link)** · [features](#what-it-does) · [how it's built](#how-its-built) · [run it locally](#run-it-locally)
+
+<p align="center">
+  <img src="docs/media/hero.mp4" alt="Building a meal on the plate, then logging it to the daily timeline" width="300">
+</p>
 
 ---
 
-## why i built this
+## why I built it
 
-most nutrition apps have gotten frustrating to use. they ask you to create accounts, push monthly subscriptions, show ads, and make you wait on network requests just to log an apple or a cup of rice
+most nutrition apps ask you to make an account, pay a subscription, or sit through ads, all while making sacrifies on features, speed, or quality. this project was initially started to get me out of that cycle, but I figured I'd share it for those who feel the same way
 
-i wanted something straightforward:
-- **offline by default**: your foods and logs are saved directly in your browser using IndexedDB. no accounts, no tracking, no loading spinners, and it still works if you lose service
-- **staging meals before logging**: instead of saving every ingredient one by one, you can build out a meal on "the plate", adjust your portion sizes, see how the numbers add up, and log the whole thing at once
-- **good food data**: search whole foods and raw ingredients through the USDA database, or scan barcodes on packaged groceries with your phone camera using Open Food Facts
-- **built for phones**: a 24-hour daily timeline, custom scroll wheels for time and date, and an on-screen number pad so your phone's keyboard doesn't push the screen around
+- **it works offline** Foods and logs are stored in your browser with IndexedDB. No account, no tracking, and it keeps working when you lose service
+- **you build a meal before you log it** Instead of saving ingredients one at a time, you put them on a plate, adjust portions, see how the numbers add up, and log the whole thing at once
+- **the food data is solid** Search whole foods through the USDA database, or scan the barcode on packaged groceries using Open Food Facts
+- **it's made for phones** A 24-hour timeline, scroll wheels for date and time, and a custom number pad so you can log foods in typical food units (even fractions!)
 
 ---
 
-## how it works
+## what it does
 
-### barcode scanning & food search
-- **camera barcode scanner**: uses your device's camera to read barcodes directly. it tries the browser's native `BarcodeDetector` first, falling back to `@zxing/library` if needed. includes controls for zoom and flashlight
-- **open food facts**: scans look up packaged foods through the Open Food Facts database
-- **usda fooddata central**: text search pulls whole foods and ingredients from the USDA database, automatically converting nutrients down to per-gram or per-milliliter values
+<table>
+  <tr>
+    <td align="center"><img src="docs/media/plate_plus_day.png" alt="The plate with live macro totals" width="200"><br><sub>the plate</sub></td>
+    <td align="center"><img src="docs/media/timeline.png" alt="24-hour daily timeline" width="200"><br><sub>24-hour timeline</sub></td>
+    <td align="center"><img src="docs/media/barcode_scanner.png" alt="Barcode scanner with torch and zoom" width="200"><br><sub>barcode scanner</sub></td>
+  </tr>
+</table>
 
-### the plate (meal staging)
-- add multiple foods to a temporary plate before committing anything to your day
-- tweak quantities and serving units (grams, ounces, cups, tablespoons, or custom packaging)
-- view a breakdown of calories and macros (protein, fat, carbs) across the whole plate
-- commit the entire meal at once or update an existing logged meal
+### the plate
+- add several foods to a temporary plate before anything touches your day
+- change quantities and serving units (grams, ounces, cups, tablespoons, or packaging sizes like "1 container")
+- flip between **Plate Only** and **Day + Plate** to see what the meal adds up to and how it fits into your day so far
+- log the whole plate in one tap, or edit a meal you already logged
 
-### 24-hour timeline
-- daily log laid out hour by hour from 12 AM to 11 PM
-- highlights the current hour so you know where you are in the day
-- add food directly to any hour with a quick "+" button
+### a 24-hour timeline
+- your day laid out hour by hour, 12 AM to 11 PM, with no fixed breakfast, lunch, and dinner boxes. that suits shift work, fasting windows, and late dinners
+- the current hour is highlighted, and tapping **+** on any hour adds food straight to that slot
 - hourly and daily totals update as you log
+
+### finding food
+- **barcode scanning:** reads barcodes with your phone's camera, with zoom and flashlight controls, and looks packaged foods up in Open Food Facts
+- **USDA FoodData Central search:** whole foods and raw ingredients, with debounced search so it isn't firing a request on every keystroke
+- **everything is cached and editable:** foods you've used or created stay available offline
+- **no image assets:** each food gets an emoji from a keyword-based classifier, so the app looks right without needing the network
+
+### install it like an app
+open the demo in *Safari* on iPhone, tap **share**, then **add to home screen**. it runs full screen as a PWA, with safe-area handling for the notch and dynamic island
+
+---
+
+## how it's built
+
+A few of the problems I ran into and what I did about them.
+
+### local first, with live queries
+Everything lives in IndexedDB through Dexie.js. Components subscribe with `useLiveQuery`, so any time a log is created, edited, or deleted, the timeline and totals update on their own. There is no global state library and no manual refetching, and nothing waits on a network.
+
+### one unit for every food
+USDA and Open Food Facts both report nutrition per 100 g or 100 ml, in different formats. On import, everything is converted to a base of 1 g or 1 ml, and each serving option just stores a multiplier:
+
+```
+total = base value × serving multiplier × quantity
+```
+
+Open Food Facts entries sometimes have macros but no calorie value. In that case the app works out calories from the macros using the standard 4 / 4 / 9 energy factors for protein, carbs, and fat.
+
+### the plate and instance ids
+Each item on the plate gets a temporary `instanceId` from `crypto.randomUUID()`. That lets the same food appear twice with different amounts (olive oil for cooking and olive oil in the dressing, for example) without key conflicts or shared state.
+
+### barcode scanning with a fallback
+The scanner uses the browser's native `BarcodeDetector` when it exists, which is faster and easier on battery. When it doesn't, it falls back to a software decoder built on `@zxing/library`. Torch and zoom controls show up only when the device supports them, and the camera stream is shut down explicitly on close so iOS doesn't leave the camera indicator on.
+Code: [`BarcodeScannerModal.tsx`](src/components/BarcodeScannerModal.tsx)
+
+### a custom number pad
+On an iOS web app, the system keyboard resizes the viewport and pushes the layout around. So the quantity fields use their own in-app keypad, with the system keyboard suppressed. The quantity parser accepts whole numbers, decimals, and fractions: `2`, `1.75`, `1/3`, `1 1/2`.
+Code: [`NumericKeyboard.tsx`](src/components/NumericKeyboard.tsx), [`stringUtils.ts`](src/utils/stringUtils.ts)
+
+### a "now" marker without polling
+Rather than checking the time on an interval, the timeline schedules a single timer for the next top of the hour and moves the current-hour marker when it fires.
+
+### data model
+Two IndexedDB tables: `foods` (normalized foods and their serving options) and `logEntries` (timestamped diary entries).
+
+<details>
+<summary>data flow diagram</summary>
+
+```mermaid
+flowchart LR
+    A["Barcode scan<br/>(Open Food Facts)"] --> N["Normalize to<br/>1 g / 1 ml base"]
+    B["Text search<br/>(USDA FoodData Central)"] --> N
+    N --> F[("foods")]
+    F --> P["The plate<br/>(in-memory)"]
+    P -->|Log plate| L[("logEntries")]
+    L -->|useLiveQuery| T["Timeline and totals"]
+```
+
+</details>
+
+### design
+Pure black background for OLED screens, neutral grays with no blue tint, soft pastel colors for the calorie, protein, fat, and carb accents, and two corner radii used consistently across the app.
 
 ---
 
 ## tech stack
 
-- **frontend**: React 19, TypeScript, Vite
-- **styling**: Tailwind CSS v4
-- **database**: Dexie.js (IndexedDB)
-- **animations**: Motion
-- **scanning**: `@zxing/library` & native BarcodeDetector
-- **food data**: USDA FoodData Central & Open Food Facts
+| | |
+| :--- | :--- |
+| **App** | React 19, TypeScript, Vite |
+| **Styling** | Tailwind CSS v4 |
+| **Storage** | Dexie.js on IndexedDB |
+| **Animation** | Motion |
+| **PWA** | Vite PWA (Workbox service worker) |
+| **Scanning** | Native `BarcodeDetector`, `@zxing/library` fallback |
+| **Food data** | USDA FoodData Central, Open Food Facts |
 
 ---
 
-## technical details & architecture
+## run it locally
 
-### local-first reactive queries
-data is stored locally using IndexedDB through Dexie.js. components subscribe to database queries using `useLiveQuery`, meaning any time a log is created, updated, or deleted, the timeline and summary totals re-render automatically without needing a global state store or manual re-fetching
+You'll need Node.js 18 or newer and a free [USDA FoodData Central API key](https://fdc.nal.usda.gov/api-key-signup.html). Open Food Facts doesn't need one.
 
-### base-unit scaling
-foods imported from the USDA or Open Food Facts are normalized to base metric units (1g or 1ml). serving options store simple multipliers relative to that base. this keeps macro calculations consistent regardless of the unit:
+```bash
+git clone https://github.com/jackbuoy/whoa-a-kcal-trackr.git
+cd whoa-a-kcal-trackr
+npm install
+```
 
-$$\text{macro} = \text{base value} \times \text{serving ratio} \times \text{quantity}$$
+Create a `.env` file in the project root:
 
-### staged plate state & instance ids
-items on the plate are given a temporary `instanceId` via `crypto.randomUUID()`. this allows having multiple separate entries of the same food on the same plate (e.g., olive oil used for cooking vs. olive oil used as dressing) with different serving sizes, without key conflicts
+```env
+VITE_USDA_API_KEY=your_usda_api_key_here
+```
 
-### barcode decoder fallback
-the scanner attempts to use the browser's hardware-accelerated `BarcodeDetector` API first for better battery life and higher frame rates on supported mobile browsers. if that API isn't available, it falls back to a software decode loop using `@zxing/library`
+Then:
+
+```bash
+npm run dev     # start the dev server
+npm run build   # production build
+```
 
 ---
 
-## getting started
+## good to know
 
-### prerequisites
-- Node.js (v18 or newer)
-- a free [USDA FoodData Central API key](https://fdc.nal.usda.gov/api-key-signup.html) (Open Food Facts doesn't require a key)
-
-### setup
-
-1. clone the repository:
-   ```bash
-   git clone https://github.com/your-username/whoa-a-kcal-trackr.git
-   cd whoa-a-kcal-trackr
-   ```
-
-2. install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. set up environment variables:
-   create a `.env` file in the root:
-   ```env
-   VITE_USDA_API_KEY=your_usda_api_key_here
-   ```
-
-4. run the development server:
-   ```bash
-   npm run dev
-   ```
-
-5. build for production:
-   ```bash
-   npm run build
-   ```
+- Your data lives in your browser, so clearing site data for the app will erase your logs.
+- Food coverage depends on USDA and Open Food Facts. Some packaged items have incomplete data.
