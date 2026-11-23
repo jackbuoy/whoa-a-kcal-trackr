@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg'],
+      includeAssets: ['wakct-icon.png'],
       manifest: {
         name: 'whoa-a-kcal-trackr',
         short_name: 'wakct',
@@ -22,9 +22,9 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: '/favicon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: '/wakct-icon.png',
+            sizes: '1024x1024',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ]

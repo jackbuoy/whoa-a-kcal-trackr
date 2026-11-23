@@ -2,7 +2,7 @@
 
 a calorie and macro tracker that works offline, has no accounts or ads, and keeps your data on your own device
 
-**[try the live demo](https://TODO-your-demo-link)** · [features](#what-it-does) · [how it's built](#how-its-built) · [run it locally](#run-it-locally)
+**[try the live demo](https://whoa-a-kcal-trackr.vercel.app/)** · [features](#what-it-does) · [how it's built](#how-its-built) · [run it locally](#run-it-locally)
 
 <p align="center">
   <img src="docs/media/hero.mp4" alt="Building a meal on the plate, then logging it to the daily timeline" width="300">
